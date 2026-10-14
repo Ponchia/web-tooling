@@ -51,12 +51,26 @@ Optional inputs:
 | --- | --- | --- |
 | `working-directory` | `.` | Directory containing `package.json` and `package-lock.json` |
 | `node-version` | `'22'` | Node.js version |
+| `runner-label` | `'ubuntu-latest'` | Hosted runner or repository-specific ARC scale-set label |
 | `run-check` | `true` | Require and execute `npm run check` |
 | `run-build` | `true` | Require and execute `npm run build` |
 | `run-tests` | `false` | Execute `npm test` |
 | `run-format` | `false` | Execute `npm run format:check` |
 | `run-audit` | `true` | Audit production and all dependencies |
 | `audit-level` | `'high'` | Fail at this severity or greater (`info`, `low`, `moderate`, `high`, `critical`) |
+
+### Private repositories using self-hosted runners
+
+The default (`ubuntu-latest`) is appropriate for public repositories. When
+GitHub refuses hosted runners in a private repository because of spending limits,
+set `runner-label` to **that repository's own** ephemeral ARC scale-set name,
+for example `arc-vps-personal-site`. Both shared and site-specific jobs must
+target self-hosted runners to avoid the same block.
+
+Treat private runner jobs as untrusted-code execution: `npm ci` can run arbitrary
+package scripts. Use isolated ephemeral runner pods, least-privilege Kubernetes
+service accounts without mounted API tokens, no production credentials, and
+controlled PR permissions. Do not run public fork PRs on privileged VPS runners.
 
 For packages in nested folders, set `working-directory: site`; the npm cache
 uses that folder's lockfile. If a site has additional browser, accessibility,

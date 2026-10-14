@@ -12,6 +12,10 @@ on:
         description: Node.js major version matching the site's supported runtime.
         type: string
         default: '22'
+      runner-label:
+        description: GitHub-hosted or repo-scoped self-hosted ARC scale-set label.
+        type: string
+        default: 'ubuntu-latest'
       run-check:
         description: Run the mandatory `npm run check` script.
         type: boolean
@@ -43,7 +47,7 @@ permissions:
 jobs:
   quality:
     name: Node ${{ inputs.node-version }} / static-site checks
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner-label }}
     timeout-minutes: 20
     permissions:
       contents: read
