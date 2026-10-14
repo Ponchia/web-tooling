@@ -94,3 +94,30 @@ npm audit
 ```
 
 MIT licensed. Contributions via pull requests are welcome.
+
+## Live public website checks (no source access)
+
+The [Live public sites](.github/workflows/live-sites.yml) job runs **in this
+public repository** daily and on manual dispatch. Its
+[`public-sites.json`](public-sites.json) allowlist currently checks the publicly
+reachable personal and Podosan homepages. This job is independent of the sites'
+private repositories and GitHub Actions billing, and uses no deployment
+credentials or website source code.
+
+It checks HTTPS, HTTP 200, HTML content type, a nonempty title, unexpected
+cross-domain redirects and accidental `noindex` directives. Missing basic
+security response headers and any `Set-Cookie` are **warnings**, not proof of
+insecurity or a GDPR violation. It does not replace source-level dependency
+scanning, CodeQL, browser audits, Cloudflare or Netlify build checks, or an
+uptime-monitoring SLA.
+
+```sh
+node --test tests/check-public-sites.test.mjs
+node scripts/check-public-sites.mjs public-sites.json
+```
+
+For private sites, GitHub bills Actions runs to the **private caller**, even
+when a workflow is sourced from this public repository; account payment or
+spending-limit restrictions can prevent those jobs from starting. This public
+URL probe is a useful independent check while private CI is unavailable, but
+cannot validate the private source code or deployments triggered by commits.

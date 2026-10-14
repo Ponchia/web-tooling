@@ -1,0 +1,36 @@
+# Free, public-repository read-only smoke checks of public deployed URLs.
+# This does not get source access to private website repositories.
+name: Live public sites
+on:
+  push:
+    branches: [main]
+    paths:
+      - public-sites.json
+      - scripts/check-public-sites.mjs
+      - tests/check-public-sites.test.mjs
+      - .github/workflows/live-sites.yml
+  schedule:
+    - cron: '17 8 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: live-public-sites
+  cancel-in-progress: false
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Test the probe itself
+        run: node --test tests/check-public-sites.test.mjs
+      - name: Check public homepages
+        run: node scripts/check-public-sites.mjs public-sites.json
