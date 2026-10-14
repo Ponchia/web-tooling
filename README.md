@@ -107,7 +107,7 @@ npm test
 npm audit
 ```
 
-MIT licensed. Contributions via pull requests are welcome.
+MIT licensed. Contributions via pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) for validation and compatibility guidance.
 
 ## Live public website checks (no source access)
 
