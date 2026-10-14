@@ -1,0 +1,96 @@
+# Reusable CI only: no publishing, environments, or inherited secrets.
+name: Static site quality
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory containing package.json and package-lock.json.
+        type: string
+        default: '.'
+      node-version:
+        description: Node.js major version matching the site's supported runtime.
+        type: string
+        default: '22'
+      run-check:
+        description: Run the mandatory `npm run check` script.
+        type: boolean
+        default: true
+      run-build:
+        description: Run the mandatory `npm run build` script.
+        type: boolean
+        default: true
+      run-tests:
+        description: Run `npm test` (requires a test script).
+        type: boolean
+        default: false
+      run-format:
+        description: Run `npm run format:check` (requires that script).
+        type: boolean
+        default: false
+      run-audit:
+        description: Audit production and development dependencies.
+        type: boolean
+        default: true
+      audit-level:
+        description: Minimum npm audit severity that fails CI.
+        type: string
+        default: 'high'
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Node ${{ inputs.node-version }} / static-site checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js and npm cache
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit production and all dependencies
+        if: inputs.run-audit
+        env:
+          AUDIT_LEVEL: ${{ inputs.audit-level }}
+        run: |
+          case "$AUDIT_LEVEL" in
+            info|low|moderate|high|critical) ;;
+            *) echo 'Invalid audit-level input' >&2; exit 2 ;;
+          esac
+          npm audit --omit=dev --audit-level="$AUDIT_LEVEL"
+          npm audit --audit-level="$AUDIT_LEVEL"
+
+      - name: Verify formatting
+        if: inputs.run-format
+        run: npm run format:check
+
+      - name: Run static checks
+        if: inputs.run-check
+        run: npm run check
+
+      - name: Build static site
+        if: inputs.run-build
+        run: npm run build
+
+      - name: Run tests
+        if: inputs.run-tests
+        run: npm test

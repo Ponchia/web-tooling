@@ -1,0 +1,11 @@
+{
+  "name": "web-tooling-static-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/site.mjs && node --check tests/site.test.mjs",
+    "build": "node src/site.mjs",
+    "test": "node --test tests/site.test.mjs"
+  }
+}

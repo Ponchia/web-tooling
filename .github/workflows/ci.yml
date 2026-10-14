@@ -1,0 +1,18 @@
+# Dogfood the reusable workflow on a minimal, lockfile-backed static site.
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fixture:
+    name: Reusable workflow smoke test
+    uses: ./.github/workflows/static-site-quality.yml
+    permissions:
+      contents: read
+    with:
+      working-directory: test/fixture
+      run-tests: true
