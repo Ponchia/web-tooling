@@ -30,6 +30,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+          # Refresh matching releases before using an older runner cache.
+          check-latest: true
       - name: Test the probe itself
         run: node --test tests/check-public-sites.test.mjs
       - name: Check public homepages
