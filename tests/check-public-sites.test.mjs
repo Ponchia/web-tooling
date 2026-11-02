@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { inspectPage, validateSites } from '../scripts/check-public-sites.mjs';
+import { fetchPage, inspectPage, validateSites } from '../scripts/check-public-sites.mjs';
 
 const site = { id: 'example', url: 'https://example.com/' };
 const response = (headers = {}) => ({
@@ -42,4 +42,30 @@ test('requires unique public HTTPS config without credentials', () => {
     assert.throws(() => validateSites([{ ...site, url }]));
   }
   assert.throws(() => validateSites([site, site]), /Duplicate/);
+});
+
+test('public-site fetch is bounded to the original HTTPS URL with no implicit redirects', async () => {
+  let calls = 0;
+  const result = await fetchPage(site, async (url, options) => {
+    calls++;
+    assert.equal(url, site.url);
+    assert.equal(options.redirect, 'error');
+    assert.equal(options.headers.Authorization, undefined);
+    return {
+      url,
+      status: 200,
+      headers: new Headers({ 'content-type': 'text/html' }),
+      body: (async function* () { yield Buffer.from('<title>OK</title>'); })(),
+    };
+  });
+  assert.equal(calls, 1);
+  assert.deepEqual(result.errors, []);
+});
+
+test('rejects HTML title fragments and strips control characters from remote text', () => {
+  const malformed = inspectPage(site, response(), '<title>Welcome <script alert(1)</title>');
+  assert.match(malformed.errors.join(' '), /unsafe HTML title/);
+  const control = inspectPage(site, response(), '<title>Ok\r\n\u001b[31m</title>');
+  assert.ok(!/[\r\n\u001b]/.test(control.title));
+  assert.deepEqual(control.errors, []);
 });

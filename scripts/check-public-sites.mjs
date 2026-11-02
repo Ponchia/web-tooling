@@ -39,8 +39,15 @@ export function inspectPage(site, response, html) {
   const type = response.headers.get('content-type') || '';
   if (!/^text\/html\b/i.test(type)) errors.push(`Not HTML: ${type || 'missing content-type'}`);
 
-  const title = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]+>/g, '').trim();
-  if (!title) errors.push('Missing or empty HTML title');
+  // An HTML title is raw text, not markup to sanitize with a tag-stripping regex.
+  // Keep control characters from remote pages out of public Actions logs.
+  const title = html
+    .match(/<title\b[^>]*>([\s\S]*?)<\/title\s*>/i)?.[1]
+    ?.replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ')
+    .trim();
+  if (!title || title.includes('<') || title.includes('>')) {
+    errors.push('Missing or unsafe HTML title');
+  }
 
   const robotsHeader = response.headers.get('x-robots-tag') || '';
   if (/(?:^|[,\s])noindex(?:[,\s]|$)/i.test(robotsHeader)) errors.push('X-Robots-Tag disables indexing');
@@ -61,12 +68,14 @@ export function inspectPage(site, response, html) {
   return { id: site.id, url: final.toString(), status: response.status, title, errors, warnings };
 }
 
-async function fetchPage(site) {
+export async function fetchPage(site, fetchImpl = fetch) {
   let lastError;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const response = await fetch(site.url, {
-        redirect: 'follow',
+      // Stop redirects before they can carry a hosted probe outside the
+      // explicitly reviewed public HTTPS origin.
+      const response = await fetchImpl(site.url, {
+        redirect: 'error',
         signal: AbortSignal.timeout(TIMEOUT_MS),
         headers: { 'user-agent': 'web-tooling-site-smoke/1.0 (read-only public website health check)' },
       });

@@ -12,3 +12,14 @@ must not silently change the code executed inside a private repository.
 `npm audit` is a dependency gate, not an exhaustive security audit. Website
 owners remain responsible for dependency upgrades, secrets, hosting settings,
 headers, supply-chain reviews, and verifying their final deployments.
+
+## Public-site probe boundary
+
+The scheduled smoke check reads a small, reviewed public-sites inventory on
+hosted runners. It accepts credential-free HTTPS origins and refuses HTTP
+redirects before any follow-up request can reach another origin. Remote page
+titles are raw text; malformed markup-like titles are reported, and control
+characters are excluded from logs. This is not a general SSRF-safe client for
+arbitrary URLs or execution inside private networks.
+
+Private vulnerability reporting is enabled in the repository Security tab.
